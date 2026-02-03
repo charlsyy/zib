@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizConnect Chat</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      background: #f0f2f5;
+    }
+    .sidebar {
+      width: 25%;
+      background: #fff;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+    }
+    .sidebar h2 {
+      padding: 15px;
+      margin: 0;
+      background: #4267B2;
+      color: white;
+    }
+    .user {
+      padding: 15px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    .user:hover {
+      background: #f5f5f5;
+    }
+    .chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-header {
+      padding: 15px;
+      background: #4267B2;
+      color: white;
+    }
+    .messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .message {
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 10px;
+      max-width: 70%;
+      position: relative;
+    }
+    .sent {
+      align-self: flex-end;
+      background: #0084ff;
+      color: white;
+    }
+    .received {
+      align-self: flex-start;
+      background: #e4e6eb;
+    }
+    .timestamp {
+      font-size: 11px;
+      color: gray;
+      margin-top: 3px;
+      display: block;
+      text-align: right;
+    }
+    .input-area {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+      background: #fff;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      outline: none;
+    }
+    .input-area button {
+      margin-left: 10px;
+      padding: 10px 20px;
+      background: #4267B2;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+    .input-area button:hover {
+      background: #365899;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Users</h2>
+    <div id="userList">Loading users...</div>
+  </div>
+  <div class="chat">
+    <div class="chat-header" id="chatHeader">Select a user to chat</div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <input type="text" id="messageInput" placeholder="Type a message..." disabled />
+      <button id="sendBtn" disabled>Send</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, onChildAdded, push, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // 🔹 Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBU3YVv4GIGc7aKYURRWvy-QZJEABOeyo0",
+      authDomain: "bizconnect-27acc.firebaseapp.com",
+      databaseURL: "https://bizconnect-27acc-default-rtdb.firebaseio.com",
+      projectId: "bizconnect-27acc",
+      storageBucket: "bizconnect-27acc.appspot.com",
+      messagingSenderId: "5592464482",
+      appId: "1:5592464482:web:8a1f371251a534da57a53b",
+      measurementId: "G-5HZCGQ96YY"
+    };
+
+    // 🔹 Init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let currentUser = null;
+    let currentChatUser = null;
+
+    const userList = document.getElementById("userList");
+    const messagesDiv = document.getElementById("messages");
+    const chatHeader = document.getElementById("chatHeader");
+    const msgInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    // ---------- Auth State ----------
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+      } else {
+        currentUser = user;
+        loadUsers();
+      }
+    });
+
+    // ---------- Load Users ----------
+    async function loadUsers() {
+      const snapshot = await get(ref(db, "users"));
+      userList.innerHTML = "";
+      snapshot.forEach(childSnap => {
+        const user = childSnap.val();
+        if (user.uid !== currentUser.uid) {
+          const div = document.createElement("div");
+          div.className = "user";
+          div.textContent = user.name || user.email;
+          div.onclick = () => startChat(user);
+          userList.appendChild(div);
+        }
+      });
+    }
+
+    // ---------- Start Chat ----------
+    function startChat(user) {
+      currentChatUser = user;
+      chatHeader.textContent = "Chat with " + (user.name || user.email);
+      messagesDiv.innerHTML = "";
+      msgInput.disabled = false;
+      sendBtn.disabled = false;
+
+      const chatId = getChatId(currentUser.uid, user.uid);
+      const chatRef = ref(db, "chats/" + chatId);
+
+      // Load messages
+      messagesDiv.innerHTML = "";
+      onChildAdded(child(chatRef, "messages"), (data) => {
+        const msg = data.val();
+        displayMessage(msg);
+      });
+    }
+
+    function getChatId(uid1, uid2) {
+      return uid1 < uid2 ? uid1 + "_" + uid2 : uid2 + "_" + uid1;
+    }
+
+    // ---------- Send Message ----------
+    sendBtn.addEventListener("click", sendMessage);
+    msgInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function sendMessage() {
+      const text = msgInput.value.trim();
+      if (!text || !currentChatUser) return;
+
+      const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+      const chatRef = ref(db, "chats/" + chatId + "/messages");
+
+      const newMsg = {
+        sender: currentUser.uid,
+        text,
+        timestamp: Date.now()
+      };
+
+      push(chatRef, newMsg);
+      msgInput.value = "";
+    }
+
+    // ---------- Display Message with Timestamp ----------
+    function displayMessage(msg) {
+      const div = document.createElement("div");
+      div.className = "message " + (msg.sender === currentUser.uid ? "sent" : "received");
+
+      const textSpan = document.createElement("span");
+      textSpan.textContent = msg.text;
+
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "timestamp";
+      timeSpan.textContent = formatTime(msg.timestamp);
+
+      div.appendChild(textSpan);
+      div.appendChild(timeSpan);
+
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // ---------- Format Timestamp ----------
+    function formatTime(ts) {
+      if (!ts) return "";
+      const date = new Date(ts);
+      let hours = date.getHours();
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12 || 12;
+      return `${hours}:${minutes} ${ampm}`;
+    }
+  </script>
+</body>
+</html>

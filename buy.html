@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buy - CMU BizConnect</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f5f6fa;
+      margin: 0;
+      color: #333;
+    }
+
+    .header {
+      background: linear-gradient(90deg, #2c3e50, #34495e);
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+
+    .navbar ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      gap: 25px;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .navbar a:hover {
+      color: #f1c40f;
+    }
+
+    .navbar a.active {
+      font-weight: bold;
+      color: #f1c40f;
+    }
+
+    .items-section {
+      max-width: 1300px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .items-section h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 25px;
+    }
+
+    .item-card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .item-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .item-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+
+    .item-info {
+      padding: 15px;
+      text-align: center;
+    }
+
+    .item-info h3 {
+      font-size: 1.2rem;
+      margin: 10px 0 5px;
+      color: #2c3e50;
+    }
+
+    .item-info p {
+      color: #7f8c8d;
+      font-size: 0.9rem;
+      margin: 5px 0;
+    }
+
+    .item-info strong {
+      display: block;
+      color: #27ae60;
+      margin: 8px 0;
+    }
+
+    /* MODAL STYLES */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      max-width: 600px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      animation: scaleIn 0.3s ease-in-out;
+      position: relative;
+    }
+
+    @keyframes scaleIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-content img {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .modal-content h2 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .modal-content p {
+      color: #555;
+      margin: 8px 0;
+    }
+
+    .message-btn, .buy-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+      margin-top: 15px;
+      margin-right: 10px;
+      color: white;
+      transition: background-color 0.2s;
+    }
+
+    .message-btn { background-color: #007bff; }
+    .message-btn:hover { background-color: #0056b3; }
+
+    .buy-btn { background-color: #27ae60; }
+    .buy-btn:hover { background-color: #219150; }
+
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      color: #333;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close-btn:hover {
+      color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="main.html" class="logo"><i class="fas fa-briefcase"></i> CMU BizConnect</a>
+    <nav class="navbar">
+      <ul>
+        <li><a href="main.html">HOME</a></li>
+        <li><a href="buy.html" class="active">BUY</a></li>
+        <li><a href="sell.html">SELL</a></li>
+        <li><a href="messages.html">MESSAGES</a></li>
+        <li><a href="notifications.html">NOTIFICATIONS</a></li>
+        <li><a href="reports.html">REPORTS</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="items-section">
+    <h2>Available Items</h2>
+    <div id="itemsContainer" class="items-grid"></div>
+  </section>
+
+  <!-- MODAL -->
+  <div id="itemModal" class="modal">
+    <div class="modal-content" id="modalContent"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBU3YVv4GIGc7aKYURRWvy-QZJEABOeyo0",
+      authDomain: "bizconnect-27acc.firebaseapp.com",
+      databaseURL: "https://bizconnect-27acc-default-rtdb.firebaseio.com/",
+      projectId: "bizconnect-27acc",
+      storageBucket: "bizconnect-27acc.appspot.com",
+      messagingSenderId: "5592464482",
+      appId: "1:5592464482:web:8a1f371251a534da57a53b"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const supabaseUrl = "https://duyeajcdalmxtdpzubec.supabase.co";
+    const supabaseAnonKey =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1eWVhamNkYWxteHRkcHp1YmVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0NzQ1MDksImV4cCI6MjA3NTA1MDUwOX0.2C_WV6xZG06e-_qgYYl-4f_NKptqrAsmeMGEuHzpL9c";
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const itemsContainer = document.getElementById("itemsContainer");
+    const modal = document.getElementById("itemModal");
+    const modalContent = document.getElementById("modalContent");
+
+    async function fetchItems() {
+      const { data: items, error } = await supabase
+        .from("items")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("❌ Error fetching items:", error);
+        return;
+      }
+
+      itemsContainer.innerHTML = "";
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.classList.add("item-card");
+        card.innerHTML = `
+          <img src="${item.image_url}" alt="${item.title}" />
+          <div class="item-info">
+            <h3>${item.title}</h3>
+            <p>${item.description}</p>
+            <strong>₱${item.price}</strong>
+            <small>Seller: ${item.seller_email}</small>
+          </div>
+        `;
+        card.addEventListener("click", () => showModal(item));
+        itemsContainer.appendChild(card);
+      });
+    }
+
+    function showModal(item) {
+      modalContent.innerHTML = `
+        <span class="close-btn" id="closeModal">&times;</span>
+        <img src="${item.image_url}" alt="${item.title}">
+        <h2>${item.title}</h2>
+        <p><strong>₱${item.price}</strong></p>
+        <p>${item.description}</p>
+        <p>Seller: ${item.seller_email}</p>
+        <a href="message.html" class="message-btn">Message Seller</a>
+        <a href="#" class="buy-btn" id="buyItemBtn">Buy Item</a>
+      `;
+
+      document.getElementById("closeModal").onclick = () => (modal.style.display = "none");
+      modal.style.display = "flex";
+
+      document.getElementById("buyItemBtn").onclick = async () => {
+        const time = prompt("Select your preferred time (e.g. 8AM, 12PM, 4PM):");
+        if (!time) return alert("Please enter a time!");
+        const place = prompt("Select meeting place (e.g. CMU Grounds, Library, Canteen):");
+        if (!place) return alert("Please enter a place!");
+
+        try {
+          const notifRef = push(ref(db, "notifications"));
+          await set(notifRef, {
+            itemId: item.id,
+            title: item.title,
+            sellerEmail: item.seller_email,
+            buyer: "Anonymous Buyer",
+            time,
+            place,
+            message: `Someone wants to buy "${item.title}" at ${time} in ${place}.`,
+            timestamp: Date.now()
+          });
+
+          alert("✅ Purchase request sent to seller!");
+          modal.style.display = "none";
+        } catch (err) {
+          console.error("❌ Error sending notification:", err);
+          alert("❌ Failed to send notification.");
+        }
+      };
+    }
+
+    window.onclick = (event) => {
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    fetchItems();
+  </script>
+</body>
+</html>

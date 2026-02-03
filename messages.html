@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages - CMU BizConnect</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; }
+    .header { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+    .navbar ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 20px; }
+    .navbar a { color: white; text-decoration: none; }
+    .navbar a.active { font-weight: bold; }
+
+    .container { max-width: 800px; margin: 40px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    #messages { height: 400px; overflow-y: auto; border: 1px solid #ccc; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    .msg { margin: 5px 0; padding: 8px; border-radius: 6px; }
+    .me { background: #2c3e50; color: white; text-align: right; }
+    .them { background: #ecf0f1; text-align: left; }
+    input, button { width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
+    button { background: #2c3e50; color: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="main.html" class="logo"><i class="fas fa-briefcase"></i> CMU BizConnect</a>
+    <nav class="navbar">
+      <ul>
+        <li><a href="main.html">HOME</a></li>
+        <li><a href="buy.html">BUY</a></li>
+        <li><a href="sell.html">SELL</a></li>
+        <li><a href="messages.html" class="active">MESSAGES</a></li>
+        <li><a href="notifications.html">NOTIFICATIONS</a></li>
+        <li><a href="reports.html">REPORTS</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="container">
+    <h2>Messages</h2>
+    <div id="messages"></div>
+    <input type="text" id="receiverEmail" placeholder="Enter receiver's email" />
+    <input type="text" id="messageInput" placeholder="Type your message..." />
+    <button id="sendBtn">Send</button>
+  </section>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBU3YVv4GIGc7aKYURRWvy-QZJEABOeyo0",
+      authDomain: "bizconnect-27acc.firebaseapp.com",
+      databaseURL: "https://bizconnect-27acc-default-rtdb.firebaseio.com/",
+      projectId: "bizconnect-27acc",
+      storageBucket: "bizconnect-27acc.appspot.com",
+      messagingSenderId: "5592464482",
+      appId: "1:5592464482:web:8a1f371251a534da57a53b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const messagesDiv = document.getElementById("messages");
+    const sendBtn = document.getElementById("sendBtn");
+    const msgInput = document.getElementById("messageInput");
+    const receiverInput = document.getElementById("receiverEmail");
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("Login required.");
+        window.location.href = "login.html";
+        return;
+      }
+      currentUser = user;
+      listenMessages();
+    });
+
+    function listenMessages() {
+      const msgRef = ref(db, "messages/");
+      onValue(msgRef, (snapshot) => {
+        const data = snapshot.val();
+        messagesDiv.innerHTML = "";
+        if (!data) return;
+        Object.values(data).forEach(m => {
+          if (m.sender === currentUser.email || m.receiver === currentUser.email) {
+            const div = document.createElement("div");
+            div.classList.add("msg", m.sender === currentUser.email ? "me" : "them");
+            div.textContent = `${m.sender}: ${m.text}`;
+            messagesDiv.appendChild(div);
+          }
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+    }
+
+    sendBtn.addEventListener("click", async () => {
+      const text = msgInput.value.trim();
+      const receiver = receiverInput.value.trim();
+      if (!text || !receiver) return alert("Fill out all fields!");
+      await push(ref(db, "messages/"), {
+        sender: currentUser.email,
+        receiver,
+        text,
+        timestamp: Date.now()
+      });
+      msgInput.value = "";
+    });
+  </script>
+</body>
+</html>

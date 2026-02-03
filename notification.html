@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications - CMU BizConnect</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; }
+    .header { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+    .navbar ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 20px; }
+    .navbar a { color: white; text-decoration: none; }
+    .navbar a.active { font-weight: bold; }
+
+    .container { max-width: 800px; margin: 40px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .notif-card { border-bottom: 1px solid #ddd; padding: 15px 0; }
+    .notif-card:last-child { border-bottom: none; }
+    .notif-card h3 { margin: 0; color: #2c3e50; }
+    .notif-card p { margin: 4px 0; color: #555; }
+    .notif-card button {
+      background: #2c3e50; color: white; border: none;
+      border-radius: 6px; padding: 6px 12px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="main.html" class="logo"><i class="fas fa-briefcase"></i> CMU BizConnect</a>
+    <nav class="navbar">
+      <ul>
+        <li><a href="main.html">HOME</a></li>
+        <li><a href="buy.html">BUY</a></li>
+        <li><a href="sell.html">SELL</a></li>
+        <li><a href="messages.html">MESSAGES</a></li>
+        <li><a href="notifications.html" class="active">NOTIFICATIONS</a></li>
+        <li><a href="reports.html">REPORTS</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="container">
+    <h2>Notifications</h2>
+    <div id="notifContainer">Loading notifications...</div>
+  </section>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBU3YVv4GIGc7aKYURRWvy-QZJEABOeyo0",
+      authDomain: "bizconnect-27acc.firebaseapp.com",
+      databaseURL: "https://bizconnect-27acc-default-rtdb.firebaseio.com/",
+      projectId: "bizconnect-27acc",
+      storageBucket: "bizconnect-27acc.appspot.com",
+      messagingSenderId: "5592464482",
+      appId: "1:5592464482:web:8a1f371251a534da57a53b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const notifContainer = document.getElementById("notifContainer");
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert("Login required.");
+        window.location.href = "login.html";
+        return;
+      }
+      const notifRef = ref(db, "notifications/");
+      onValue(notifRef, (snapshot) => {
+        const data = snapshot.val();
+        notifContainer.innerHTML = "";
+        if (!data) {
+          notifContainer.innerHTML = "<p>No notifications yet.</p>";
+          return;
+        }
+
+        const userEmail = user.email;
+        const notifs = Object.entries(data).filter(([id, n]) => n.sellerEmail === userEmail);
+        if (!notifs.length) {
+          notifContainer.innerHTML = "<p>No notifications for you.</p>";
+          return;
+        }
+
+        notifs.forEach(([id, n]) => {
+          const div = document.createElement("div");
+          div.classList.add("notif-card");
+          div.innerHTML = `
+            <h3>${n.itemTitle}</h3>
+            <p><b>Buyer:</b> ${n.buyerEmail}</p>
+            <p><b>Message:</b> ${n.message || "(No message)"} </p>
+            <p><b>Time:</b> ${n.selectedTime}, <b>Place:</b> ${n.selectedPlace}</p>
+            <button onclick="markAsRead('${id}')">Mark as Read</button>
+          `;
+          notifContainer.appendChild(div);
+        });
+      });
+    });
+
+    window.markAsRead = async (id) => {
+      const notifRef = ref(db, "notifications/" + id);
+      await remove(notifRef);
+      alert("✅ Notification removed!");
+    };
+  </script>
+</body>
+</html>

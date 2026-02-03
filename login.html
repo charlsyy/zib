@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMU BizConnect - Login</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+<body>
+  <div class="main-container">
+    <div class="left-panel">
+      <img src="cmu.png" alt="CMU Logo" class="logo">
+    </div>
+    <div class="L">BizConnect</div>
+
+    <div class="container" id="container">
+      <!-- SIGN UP FORM -->
+      <div class="form-container sign-up-container">
+        <form id="signup_form">
+          <h1>Create Account</h1>
+          <input type="email" placeholder="Email" id="signup_email" required />
+          <input type="password" placeholder="Password" id="signup_password" required />
+          <button type="submit" id="signup">Sign Up</button>
+        </form>
+      </div>
+
+      <!-- SIGN IN FORM -->
+      <div class="form-container sign-in-container">
+        <form id="login_form">
+          <h1>Sign in</h1>
+          <input type="email" placeholder="Email" id="login_email" required />
+          <input type="password" placeholder="Password" id="login_password" required />
+          <button type="submit" id="login">Sign In</button>
+        </form>
+      </div>
+
+      <!-- OVERLAY -->
+      <div class="overlay-container">
+        <div class="overlay">
+          <div class="overlay-panel overlay-left">
+            <h1>Welcome Back!</h1>
+            <p>Login with your CMU account</p>
+            <button class="ghost" id="signIn">Sign In</button>
+          </div>
+          <div class="overlay-panel overlay-right">
+            <h1>Hello, CMUCitizen!</h1>
+            <p>Create an account to start your Biz journey</p>
+            <button class="ghost" id="signUp">Sign Up</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBU3YVv4GIGc7aKYURRWvy-QZJEABOeyo0",
+    authDomain: "bizconnect-27acc.firebaseapp.com",
+    databaseURL: "https://bizconnect-27acc-default-rtdb.firebaseio.com",
+    projectId: "bizconnect-27acc",
+    storageBucket: "bizconnect-27acc.appspot.com",
+    messagingSenderId: "5592464482",
+    appId: "1:5592464482:web:8a1f371251a534da57a53b",
+    measurementId: "G-5HZCGQ96YY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  async function saveUserToDb(user) {
+    if (!user) return;
+    const userRef = ref(db, "users/" + user.uid);
+    await set(userRef, {
+      uid: user.uid,
+      email: user.email,
+      createdAt: Date.now()
+    });
+  }
+
+  document.getElementById("login_form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("login_email").value;
+    const password = document.getElementById("login_password").value;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await saveUserToDb(userCredential.user);
+      window.location.href = "main.html";
+    } catch (err) {
+      alert("Login failed: " + err.message);
+    }
+  });
+
+  document.getElementById("signup_form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("signup_email").value;
+    const password = document.getElementById("signup_password").value;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await saveUserToDb(userCredential.user);
+      alert("Account created!");
+      window.location.href = "main.html";
+    } catch (err) {
+      alert("Sign Up failed: " + err.message);
+    }
+  });
+
+  const signUpButton = document.getElementById("signUp");
+  const signInButton = document.getElementById("signIn");
+  const container = document.getElementById("container");
+
+  signUpButton.addEventListener("click", () => container.classList.add("right-panel-active"));
+  signInButton.addEventListener("click", () => container.classList.remove("right-panel-active"));
+</script>
+</body>
+</html>

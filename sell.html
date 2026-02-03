@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sell - CMU BizConnect</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; }
+    .header { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+    .navbar ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 20px; }
+    .navbar a { color: white; text-decoration: none; }
+    .navbar a.active { font-weight: bold; }
+
+    .form-section { max-width: 600px; margin: 30px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .form-section h2 { margin-bottom: 20px; }
+    .form-section input, .form-section textarea, .form-section select, .form-section button {
+      width: 100%; margin: 10px 0; padding: 12px; border: 1px solid #ccc; border-radius: 8px;
+    }
+    .form-section button { background: #2c3e50; color: white; border: none; cursor: pointer; }
+    .form-section button:hover { background: #34495e; }
+
+    .my-items { max-width: 900px; margin: 40px auto; }
+    .item-card { background: white; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 15px; margin: 15px 0; display: flex; gap: 20px; align-items: center; }
+    .item-card img { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; }
+    .item-info { flex: 1; }
+    .item-actions button { margin: 0 5px; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-edit { background: #27ae60; color: white; }
+    .btn-delete { background: #e74c3c; color: white; }
+
+    .time-place-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .add-btn { background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+    .add-btn:hover { background: #2980b9; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="main.html" class="logo"><i class="fas fa-briefcase"></i> CMU BizConnect</a>
+    <nav class="navbar">
+      <ul>
+        <li><a href="main.html">HOME</a></li>
+        <li><a href="buy.html">BUY</a></li>
+        <li><a href="sell.html" class="active">SELL</a></li>
+        <li><a href="messages.html">MESSAGES</a></li>
+        <li><a href="notifications.html">NOTIFICATIONS</a></li>
+        <li><a href="reports.html">REPORTS</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="form-section">
+    <h2>Sell an Item</h2>
+    <form id="sellForm">
+      <input type="text" id="title" placeholder="Item Title" required />
+      <textarea id="description" placeholder="Item Description" required></textarea>
+      <input type="number" id="price" placeholder="Price" required />
+      <input type="file" id="image" accept="image/*" required />
+
+      <h3>Available Time & Place</h3>
+      <div id="availabilityContainer">
+        <div class="time-place-row">
+          <select class="timeSelect" required>
+            <option value="">-- Select Time --</option>
+            <option value="7AM">7 AM</option>
+            <option value="8AM">8 AM</option>
+            <option value="9AM">9 AM</option>
+            <option value="10AM">10 AM</option>
+            <option value="11AM">11 AM</option>
+            <option value="12PM">12 PM</option>
+            <option value="1PM">1 PM</option>
+            <option value="2PM">2 PM</option>
+            <option value="3PM">3 PM</option>
+            <option value="4PM">4 PM</option>
+            <option value="5PM">5 PM</option>
+          </select>
+          <select class="placeSelect" required>
+            <option value="">-- Select Place --</option>
+            <option value="CMU Grounds">CMU Grounds</option>
+            <option value="First Room of CMU">First Room of CMU</option>
+            <option value="Library Area">Library Area</option>
+            <option value="Canteen">Canteen</option>
+            <option value="Main Gate">Main Gate</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" class="add-btn" id="addMoreBtn">+ Add More</button>
+
+      <button type="submit">Post Item</button>
+    </form>
+  </section>
+
+  <section class="my-items">
+    <h2>My Listings</h2>
+    <div id="myItemsContainer"></div>
+  </section>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBU3YVv4GIGc7aKYURRWvy-QZJEABOeyo0",
+      authDomain: "bizconnect-27acc.firebaseapp.com",
+      projectId: "bizconnect-27acc",
+      storageBucket: "bizconnect-27acc.appspot.com",
+      messagingSenderId: "5592464482",
+      appId: "1:5592464482:web:8a1f371251a534da57a53b"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const supabaseUrl = "https://duyeajcdalmxtdpzubec.supabase.co";
+    const supabaseAnonKey =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1eWVhamNkYWxteHRkcHp1YmVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0NzQ1MDksImV4cCI6MjA3NTA1MDUwOX0.2C_WV6xZG06e-_qgYYl-4f_NKptqrAsmeMGEuHzpL9c";
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const sellForm = document.getElementById("sellForm");
+    const myItemsContainer = document.getElementById("myItemsContainer");
+    const addMoreBtn = document.getElementById("addMoreBtn");
+    const availabilityContainer = document.getElementById("availabilityContainer");
+
+    addMoreBtn.addEventListener("click", () => {
+      const row = document.createElement("div");
+      row.classList.add("time-place-row");
+      row.innerHTML = `
+        <select class="timeSelect" required>
+          <option value="">-- Select Time --</option>
+          <option value="7AM">7 AM</option>
+          <option value="8AM">8 AM</option>
+          <option value="9AM">9 AM</option>
+          <option value="10AM">10 AM</option>
+          <option value="11AM">11 AM</option>
+          <option value="12PM">12 PM</option>
+          <option value="1PM">1 PM</option>
+          <option value="2PM">2 PM</option>
+          <option value="3PM">3 PM</option>
+          <option value="4PM">4 PM</option>
+          <option value="5PM">5 PM</option>
+        </select>
+        <select class="placeSelect" required>
+          <option value="">-- Select Place --</option>
+          <option value="CMU Grounds">CMU Grounds</option>
+          <option value="First Room of CMU">First Room of CMU</option>
+          <option value="Library Area">Library Area</option>
+          <option value="Canteen">Canteen</option>
+          <option value="Main Gate">Main Gate</option>
+        </select>
+      `;
+      availabilityContainer.appendChild(row);
+    });
+
+    let currentUser = null;
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("You must be logged in to sell items!");
+        window.location.href = "login.html";
+      } else {
+        currentUser = user;
+        loadMyItems();
+      }
+    });
+
+    sellForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const price = parseFloat(document.getElementById("price").value);
+      const imageFile = document.getElementById("image").files[0];
+
+      const timeSelects = document.querySelectorAll(".timeSelect");
+      const placeSelects = document.querySelectorAll(".placeSelect");
+      const availableTimes = Array.from(timeSelects).map(sel => sel.value);
+      const availablePlaces = Array.from(placeSelects).map(sel => sel.value);
+
+      if (!title || !description || !price || !imageFile) {
+        alert("Please fill all fields!");
+        return;
+      }
+
+      try {
+        const fileName = `${currentUser.uid}_${Date.now()}_${imageFile.name}`;
+        const { error: uploadError } = await supabase.storage.from("images").upload(fileName, imageFile);
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(fileName);
+
+        const { error } = await supabase.from("items").insert([
+          {
+            title,
+            description,
+            price,
+            image_url: publicUrl,
+            seller_email: currentUser.email,
+            available_time: availableTimes,
+            available_place: availablePlaces
+          }
+        ]);
+
+        if (error) throw error;
+
+        alert("✅ Item posted successfully!");
+        sellForm.reset();
+        availabilityContainer.innerHTML = "";
+        loadMyItems();
+      } catch (err) {
+        console.error("❌ Error posting item:", err);
+        alert("❌ Error posting: " + err.message);
+      }
+    });
+
+    async function loadMyItems() {
+      myItemsContainer.innerHTML = "Loading...";
+      const { data: items, error } = await supabase
+        .from("items")
+        .select("*")
+        .eq("seller_email", currentUser.email)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        myItemsContainer.innerHTML = "Error loading items.";
+        return;
+      }
+
+      myItemsContainer.innerHTML = "";
+      if (!items.length) {
+        myItemsContainer.innerHTML = "<p>No items listed yet.</p>";
+        return;
+      }
+
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.classList.add("item-card");
+
+        div.innerHTML = `
+          <img src="${item.image_url}" alt="${item.title}" />
+          <div class="item-info">
+            <h3>${item.title}</h3>
+            <p>${item.description}</p>
+            <p><strong>₱${item.price}</strong></p>
+            <p><b>Available:</b> ${(item.available_time || []).join(", ")} at ${(item.available_place || []).join(", ")}</p>
+          </div>
+          <div class="item-actions">
+            <button class="btn-edit" onclick="editItem('${item.id}', '${item.title}', '${item.description}', ${item.price})">Edit</button>
+            <button class="btn-delete" onclick="deleteItem('${item.id}')">Delete</button>
+          </div>
+        `;
+        myItemsContainer.appendChild(div);
+      });
+    }
+
+    window.deleteItem = async (id) => {
+      if (!confirm("Are you sure you want to delete this item?")) return;
+      try {
+        const { error } = await supabase.from("items").delete().eq("id", id);
+        if (error) throw error;
+        alert("✅ Item deleted successfully!");
+        loadMyItems();
+      } catch (err) {
+        console.error("❌ Delete error:", err);
+        alert("❌ Failed to delete: " + err.message);
+      }
+    };
+
+    window.editItem = (id, title, description, price) => {
+      document.getElementById("title").value = title;
+      document.getElementById("description").value = description;
+      document.getElementById("price").value = price;
+      deleteItem(id);
+    };
+  </script>
+</body>
+</html>
